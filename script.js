@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import WebGl from 'three/addons/capabilities/WebGl.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import Stats from 'three/examples/jsm/libs/stats.module'
 /* Random bouncing and rotating cube
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -51,27 +54,88 @@ else{
     document.getElementById('container').appendChild(warning);
 }
 */
-
-const renderer = new THREE.WebGLRenderer();
+let camera, scene, renderer;
+scene = new THREE.Scene();
+scene.add(new THREE.AxesHelper(5));
+const light = new THREE.SpotLight()
+light.position.set(10, 10, 10)
+scene.add(light)
+renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled = true
+const dirLight1 = new THREE.DirectionalLight( 'blue', 3 );
+dirLight1.position.set( 1, 0.75, 0.5 );
+scene.add( dirLight1 );
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+scene.background = new THREE.Color('white')
+camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.25, 2000);
+camera.position.z = 2;
+//renderer.useLegacyLights = false
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 500);
-camera.position.set(0, 0, 100);
-camera.lookAt(0, 0, 0);
-
-const scene = new THREE.Scene();
 
 //create a blue LineBasicMaterial
-const material = new THREE.LineBasicMaterial({color: 'Blue'});
 
-const points = [];
-points.push(new THREE.Vector3(-10, 0, 0));
-points.push(new THREE.Vector3(0, 10, 0));
-points.push(new THREE.Vector3(10, 0, 0));
+//scene.add(line);
+function render(){
+    renderer.render(scene, camera);
+}
 
-const geometry = new THREE.BufferGeometry().setFromPoints(points);
-const line = new THREE.Line(geometry, material);
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.enableDamping = true
 
-scene.add(line);
-renderer.render(scene, camera);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const loader = new GLTFLoader();
+
+    loader.load(
+    'models/scene.gltf',
+    function(gltf){
+        scene.add( gltf.scene );
+        const texture = new THREE.TextureLoader().load('textures/Planet_diffuse.jpeg' ); 
+        // immediately use the texture for material creation 
+
+    const material = new THREE.MeshBasicMaterial( { map:texture } );
+    texture.colorSpace = THREE.SRGBColorSpace;
+    mesh = new THREE.Mesh(material);
+
+// UVs use the convention that (0, 0) corresponds to the upper left corner of a texture.
+    texture.flipY = false;
+		gltf.animations; // Array<THREE.AnimationClip>
+		gltf.scene; // THREE.Group
+		gltf.scenes; // Array<THREE.Group>
+		gltf.cameras; // Array<THREE.Camera>
+		gltf.asset; // Object
+        
+    render();
+    
+},
+function ( xhr ) {
+
+    console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+}, function (error){
+    console.error(error);
+});
+
+window.addEventListener('resize', onWindowResize, false)
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    render()
+}
+
+const stats = new Stats()
+document.body.appendChild(stats.dom)
+
+
+function animate() {
+    requestAnimationFrame(animate)
+
+    controls.update()
+
+    render()
+
+    stats.update()
+}
+animate();
